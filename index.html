@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BluePilot · 多市场投放复盘与诊断</title>
+<style>
+:root{--bg:#F4F6FB;--ink:#182238;--ink2:#5D6B85;--ink3:#93A0B8;--line:#E4E9F2;
+--brand:#2B5CE6;--bs:#EDF2FF;--purple:#7448D8;--ps:#F2EDFF;--ok:#0FA47A;--os:#E7F7F1;
+--warn:#B97C17;--ws:#FFF4E3;--bad:#C7455C;--bads:#FDEFF1;--sh:0 2px 6px rgba(24,34,56,.04),0 10px 28px rgba(24,34,56,.06)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"PingFang SC","Microsoft YaHei",-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px 56px}
+header{background:#fff;border-bottom:1px solid var(--line)}
+.hd{max-width:1240px;margin:0 auto;padding:15px 24px;display:flex;align-items:center;gap:13px;flex-wrap:wrap}
+.logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--brand),var(--purple));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+.bt{font-size:16.5px;font-weight:700}.bs2{font-size:11px;color:var(--ink3)}
+.hd-r{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.tag{font-size:10.8px;padding:4px 11px;border-radius:20px;background:var(--bs);color:var(--brand);font-weight:600}
+.tag.alt{background:var(--ps);color:var(--purple)}
+.sh2{margin:22px 0 14px}.sh2 h2{font-size:18.5px}.sh2 p{font-size:12px;color:var(--ink2);margin-top:3px}
+.card{background:#fff;border:1px solid var(--line);border-radius:13px;box-shadow:var(--sh)}
+.pad{padding:19px}
+.grid{display:grid;grid-template-columns:320px 1fr;gap:17px;align-items:start}
+@media(max-width:960px){.grid{grid-template-columns:1fr}}
+.ch{display:flex;align-items:center;gap:8px;margin-bottom:13px}
+.ch h3{font-size:13.5px}.ch .sub{font-size:10.6px;color:var(--ink3);margin-left:auto}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--brand)}
+.btn{display:block;width:100%;text-align:center;margin-top:10px;border:0;border-radius:9px;padding:10px;font-size:12.5px;font-weight:700;color:#fff;background:linear-gradient(100deg,var(--brand),var(--purple));cursor:pointer;font-family:inherit;text-decoration:none}
+.btn.g{background:#fff;color:var(--brand);border:1px solid var(--line);font-weight:600}
+.btn.g:hover{border-color:var(--brand);background:var(--bs)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.hint{font-size:10.8px;color:var(--ink3);margin-top:11px;line-height:1.75}
+code.k{font-family:ui-monospace,Consolas,monospace;font-size:10.6px;background:#F2F5FA;padding:1px 5px;border-radius:4px;color:var(--ink2)}
+.upzone{margin-top:11px;border:1.5px dashed var(--line);border-radius:10px;padding:16px 12px;text-align:center;font-size:11.5px;color:var(--ink2);cursor:pointer;transition:.2s}
+.upzone:hover{border-color:var(--brand);background:var(--bs);color:var(--brand)}
+.msg{margin-top:11px;font-size:11.3px;border-radius:8px;padding:9px 11px;line-height:1.75;display:none}
+.msg.ok{display:block;background:var(--os);color:#0B7A5B}
+.msg.err{display:block;background:var(--bads);color:var(--bad)}
+.msg.wr{display:block;background:var(--ws);color:var(--warn)}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:11px;padding:13px 14px;box-shadow:var(--sh)}
+.kpi .k{font-size:10.4px;color:var(--ink3)}
+.kpi .v{font-size:20px;font-weight:700;letter-spacing:-.4px;margin:3px 0 1px;font-variant-numeric:tabular-nums}
+.kpi .d{font-size:10px;color:var(--ink3)}
+.kpi .d.up{color:var(--ok)}.kpi .d.dn{color:var(--bad)}
+.sect{margin-top:17px}
+.sect-h{display:flex;align-items:center;gap:9px;margin-bottom:11px}
+.sect-h h3{font-size:14px}
+.sect-h .sub{font-size:10.8px;color:var(--ink3)}
+.seg{margin-left:auto;display:flex;background:#EEF1F8;border-radius:8px;padding:3px}
+.seg button{border:0;background:none;font-size:11px;font-weight:600;color:var(--ink2);padding:5px 13px;border-radius:6px;cursor:pointer;font-family:inherit}
+.seg button.on{background:#fff;color:var(--brand);box-shadow:0 1px 4px rgba(24,34,56,.1)}
+.c2{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+@media(max-width:860px){.c2{grid-template-columns:1fr}}
+table.t{width:100%;border-collapse:collapse;font-size:11.6px;font-variant-numeric:tabular-nums}
+table.t th{background:#FAFBFE;color:var(--ink2);text-align:right;padding:8px 9px;border-bottom:1px solid var(--line);font-size:10.6px;white-space:nowrap;cursor:pointer;user-select:none}
+table.t th:first-child,table.t td:first-child{text-align:left}
+table.t td{padding:8px 9px;border-bottom:1px solid #F0F3F9;text-align:right;color:var(--ink2)}
+table.t tr:last-child td{border-bottom:0}
+table.t tr.hl td{background:var(--bads)}
+table.t td b{color:var(--ink)}
+.pill{font-size:9.8px;font-weight:700;padding:2px 7px;border-radius:5px;white-space:nowrap}
+.pill.p0{background:var(--bads);color:var(--bad)}.pill.p1{background:var(--ws);color:var(--warn)}.pill.p2{background:var(--bs);color:var(--brand)}
+.diag{border:1px solid var(--line);border-left:3px solid var(--bad);border-radius:10px;padding:13px 15px;margin-bottom:11px;background:#fff}
+.diag.p1{border-left-color:var(--warn)}.diag.p2{border-left-color:var(--brand)}
+.diag .dh{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:6px}
+.diag .dh b{font-size:12.8px}
+.diag .obj{font-size:10.6px;color:var(--ink3)}
+.diag p{font-size:11.8px;color:var(--ink2);line-height:1.8}
+.diag p b{color:var(--ink)}
+.diag .ev{background:#FAFBFE;border-radius:7px;padding:8px 11px;font-size:11.2px;margin:7px 0;font-variant-numeric:tabular-nums}
+.bars{margin-top:4px}
+.brow{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:11.3px}
+.brow .lb{width:82px;flex-shrink:0;color:var(--ink2)}
+.btr{flex:1;height:8px;background:#EEF2F9;border-radius:5px;overflow:hidden}
+.bfl{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--brand),var(--purple))}
+.bfl.low{background:linear-gradient(90deg,#E07A8B,var(--bad))}
+.brow .vl{width:52px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+svg.chart{width:100%;height:auto;display:block}
+.ax{font-size:9px;fill:var(--ink3);font-family:inherit}
+.empty{padding:52px 24px;text-align:center}
+.empty h3{font-size:14.5px;margin-bottom:6px}
+.empty p{font-size:12px;color:var(--ink2);max-width:420px;margin:0 auto;line-height:1.9}
+pre.rep{white-space:pre-wrap;font-family:inherit;font-size:12px;color:var(--ink2);line-height:1.9;background:#FAFBFE;border:1px solid var(--line);border-radius:10px;padding:16px;max-height:420px;overflow:auto}
+.notice{font-size:10.8px;color:var(--ink3);background:#FAFBFE;border:1px dashed var(--line);border-radius:8px;padding:10px 13px;margin-top:16px;line-height:1.85}
+.foot{text-align:center;font-size:10.5px;color:var(--ink3);margin-top:28px;line-height:1.9}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:12px;padding:10px 20px;border-radius:9px;opacity:0;pointer-events:none;transition:.25s;z-index:99}
+.toast.on{opacity:1}
+details.rules{margin-top:14px;font-size:11.5px;color:var(--ink2)}
+details.rules summary{cursor:pointer;font-weight:600;font-size:11.8px;color:var(--brand)}
+details.rules li{margin:6px 0 0 16px;line-height:1.8}
+</style>
+</head>
+<body>
+<header><div class="hd">
+<div class="logo">B</div>
+<div><div class="bt">BluePilot</div><div class="bs2">多市场投放复盘与诊断 · 可用型产品 Demo</div></div>
+<div class="hd-r"><span class="tag">真实计算 · 本地运行</span><span class="tag alt">AI Builder 投递作品</span></div>
+</div></header>
+<div class="wrap">
+<div class="sh2"><h2>上传投放数据，得到一份可复核的复盘诊断</h2>
+<p>核心链路真实运行：CSV 解析 → 指标计算 → 多维下钻 → 规则诊断 → 报告导出。所有数字均由你上传或内置的数据实时算出，无任何预设结论文本。</p></div>
+
+<div class="grid">
+<div>
+<div class="card pad">
+<div class="ch"><span class="dot"></span><h3>1. 准备数据</h3><span class="sub">本地处理</span></div>
+<button class="btn" id="loadDemo">载入内置示例数据</button>
+<a class="btn g" id="dlDemo" href="#" download="bluepilot_sample.csv">下载示例 CSV（可再上传体验）</a>
+<div class="upzone" id="upzone">点击选择或拖入你的 CSV 文件<input type="file" id="file" accept=".csv" style="display:none"></div>
+<div class="msg" id="msg"></div>
+<div class="hint">必需列：<code class="k">date</code> <code class="k">market</code> <code class="k">channel</code> <code class="k">spend</code> <code class="k">impressions</code> <code class="k">clicks</code> <code class="k">conversions</code> <code class="k">revenue</code><br>
+一行 = 某市场 × 某渠道 × 某一天。金额使用同一币种。数据仅在你浏览器本地处理，不上传服务器。</div>
+</div>
+<div class="card pad" style="margin-top:15px">
+<div class="ch"><span class="dot" style="background:var(--purple)"></span><h3>指标口径</h3></div>
+<div class="hint" style="margin-top:0">
+CTR = clicks ÷ impressions<br>
+CVR = conversions ÷ clicks<br>
+CPC = spend ÷ clicks<br>
+CPA = spend ÷ conversions<br>
+ROAS = revenue ÷ spend<br>
+分母为 0 时该指标记为「—」，不参与均值计算，不强行填 0。<br>
+环比口径：数据区间内后 7 天对比前 7 天；不足 14 天时按前后各半拆分，并在报告中注明。</div>
+</div>
+</div>
+
+<div>
+<div class="card empty" id="empty">
+<h3>尚未载入数据</h3>
+<p>点击左侧「载入内置示例数据」即可看到完整复盘流程。<br>示例数据为虚构，覆盖 4 个市场 × 4 个渠道 × 14 天，并包含若干可被规则发现的真实异常。<br>也可以下载示例 CSV 后再上传，体验完整的数据校验流程。</p>
+</div>
+<div id="main" style="display:none">
+<div class="kpis" id="kpis"></div>
+
+<div class="card pad sect">
+<div class="sect-h"><h3>2. 趋势与结构</h3><span class="sub">按日聚合</span></div>
+<div class="c2">
+<div><div style="font-size:11px;color:var(--ink3);margin-bottom:6px">每日 ROAS</div><div id="chRoas"></div></div>
+<div><div style="font-size:11px;color:var(--ink3);margin-bottom:6px">每日花费</div><div id="chSpend"></div></div>
+</div>
+<div class="c2" style="margin-top:16px">
+<div><div style="font-size:11px;color:var(--ink3);margin-bottom:4px">各市场 ROAS（整体 <span id="roasAll"></span>）</div><div class="bars" id="barMarket"></div></div>
+<div><div style="font-size:11px;color:var(--ink3);margin-bottom:4px">渠道花费占比</div><div class="bars" id="barChannel"></div></div>
+</div>
+</div>
+
+<div class="card pad sect">
+<div class="sect-h"><h3>3. 多维下钻</h3><span class="sub">点击表头排序</span>
+<div class="seg" id="seg"><button class="on" data-d="market">按市场</button><button data-d="channel">按渠道</button><button data-d="mc">市场 × 渠道</button></div></div>
+<div style="overflow-x:auto"><table class="t" id="tbl"></table></div>
+<div class="hint">红色行 = 命中 P0 级诊断的对象。分母为 0 的指标显示为「—」，不计入排序与均值。</div>
+</div>
+
+<div class="sect">
+<div class="sect-h"><h3>4. 诊断结论</h3><span class="sub" id="diagCnt"></span></div>
+<div id="diags"></div>
+<details class="rules card pad"><summary>诊断规则与阈值（全部公开，可解释、可调整）</summary>
+<li><b>P0 高消耗低回报</b>：对象 ROAS &lt; 1.5，且花费占整体花费 ≥ 10%。</li>
+<li><b>P0 市场回报骤降</b>：单一市场后 7 天 ROAS 较前 7 天下降 &gt; 30%，且前期 ROAS ≥ 2。</li>
+<li><b>P1 转化成本偏高</b>：对象 CPA &gt; 整体 CPA × 1.5，且转化数 ≥ 20。</li>
+<li><b>P1 点击效率偏低</b>：对象 CTR &lt; 整体 CTR × 0.6，且曝光 ≥ 50000。</li>
+<li><b>P1 转化链路偏弱</b>：对象 CVR &lt; 整体 CVR × 0.6，且点击 ≥ 1000。</li>
+<li><b>P2 表现优于均值</b>：对象 ROAS &gt; 整体 ROAS × 1.3，且花费 ≥ 整体花费 5%，作为可加预算候选。</li>
+<li>同一对象命中多条规则时全部列出；无命中时明确输出「未发现异常」，不硬凑结论。</li>
+</details>
+<button class="btn g" id="cpDiag">复制诊断结论，粘贴到 Coze 做 AI 归因</button>
+</div>
+
+<div class="card pad sect">
+<div class="sect-h"><h3>5. AI 归因</h3><span class="sub">Coze 大模型工作流 · 只做解释，不新增数字</span></div>
+<textarea id="aiIn" placeholder="操作顺序：点击上方「复制诊断结论」→ 在 Coze 智能体中粘贴并发送 → 把返回的归因文本粘贴到这里 → 点击「合并进报告」。" style="width:100%;min-height:120px;border:1px solid var(--line);border-radius:9px;padding:12px;font-size:12px;font-family:inherit;line-height:1.85;color:var(--ink);background:#FBFCFE;outline:none"></textarea>
+<button class="btn g" id="mergeAi">合并 AI 归因进报告</button>
+<div class="hint">本期采用人工桥接，不做浏览器直连 API：API 密钥写进前端会泄露，实时对接需要后端代理，属于下一阶段。这个边界是有意的工程设计，而非功能缺失。</div>
+</div>
+
+<div class="card pad sect">
+<div class="sect-h"><h3>6. 复盘报告</h3><span class="sub">规则计算 + AI 归因合并生成</span></div>
+<button class="btn" id="gen" style="margin-top:0">生成复盘报告</button>
+<div style="display:flex;gap:9px"><button class="btn g" id="cp">复制 Markdown</button><button class="btn g" id="dl">下载 .md</button></div>
+<pre class="rep" id="rep" style="margin-top:12px;display:none"></pre>
+</div>
+</div>
+</div>
+</div>
+
+<div class="notice">说明：指标计算与诊断由<b>公开阈值的规则引擎</b>完成，数字可逐格复核；<b>AI 归因由独立的 Coze 大模型工作流承担</b>，只允许引用已算出的证据数字，不新增数据。「数字归规则、解释归模型」是本产品的核心设计。示例数据为虚构，仅用于演示产品逻辑，不构成任何真实市场判断。本方案为产品设计参考，具体实施请结合公司合规与法务要求确认。</div>
+<div class="foot">BluePilot · 多市场投放复盘与诊断<br>本地运行 · 数据不出浏览器 · AI Builder 产品岗投递作品</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var RAW=[],AGG=null,DIM="market",SORT={k:"spend",asc:false},DIAGS=[];
+function $(id){return document.getElementById(id)}
+function toast(m){var t=$("toast");t.textContent=m;t.className="toast on";setTimeout(function(){t.className="toast"},2200)}
+function fmt(n,d){if(n===null||n===undefined||!isFinite(n))return "—";return Number(n).toLocaleString("zh-CN",{minimumFractionDigits:d||0,maximumFractionDigits:d||0})}
+function money(n){return fmt(n,0)}
+function ratio(a,b){return b>0?a/b:null}
+
+/* ---- 确定性伪随机，保证每次载入的示例数据一致，诊断可复现 ---- */
+var seed=20261014;
+function rnd(){seed=(seed*1103515245+12345)%2147483648;return seed/2147483648}
+var MARKETS=["美国","德国","印尼","沙特"],CHANS=["Meta","Google","TikTok","Moloco"];
+function buildDemo(){
+seed=20261014;var rows=[];
+for(var d=1;d<=14;d++){
+var date="2026-10-"+(d<10?"0"+d:d);
+for(var m=0;m<MARKETS.length;m++){for(var c=0;c<CHANS.length;c++){
+var mk=MARKETS[m],ch=CHANS[c];
+var base=9000+rnd()*5000;
+var spend=Math.round(base*(1+(m*0.12))*(ch==="Moloco"?0.6:1));
+var imp=Math.round(spend*(38+rnd()*22));
+var ctr=0.012+rnd()*0.012;
+if(mk==="沙特"&&ch==="Meta")ctr=0.004+rnd()*0.002;
+var clicks=Math.round(imp*ctr);
+var cvr=0.028+rnd()*0.02;
+if(mk==="德国"&&ch==="Google")cvr=0.009+rnd()*0.004;
+var conv=Math.max(1,Math.round(clicks*cvr));
+var aov=85+rnd()*40;
+var rev=conv*aov;
+if(mk==="印尼"&&ch==="TikTok"){spend=Math.round(spend*2.5);rev=conv*aov*0.25}
+if(mk==="美国"&&d>=11)rev=rev*0.25;
+rows.push({date:date,market:mk,channel:ch,spend:spend,impressions:imp,clicks:clicks,conversions:conv,revenue:Math.round(rev)});
+}}}
+return rows;
+}
+var COLS=["date","market","channel","spend","impressions","clicks","conversions","revenue"];
+function toCSV(rows){
+var s="﻿"+COLS.join(",")+"\n";
+rows.forEach(function(r){s+=COLS.map(function(k){return r[k]}).join(",")+"\n"});
+return s;
+}
+function parseCSV(text){
+text=text.replace(/^﻿/,"");
+var i=0,ch,grid=[],raw=[],f="",inQ=false;
+for(i=0;i<text.length;i++){ch=text[i];
+if(inQ){if(ch==='"'){if(text[i+1]==='"'){f+='"';i++}else inQ=false}else f+=ch;continue}
+if(ch==='"'){inQ=true;continue}
+if(ch===','){raw.push(f);f="";continue}
+if(ch==='\n'||ch==='\r'){if(ch==='\r'&&text[i+1]==='\n')i++;raw.push(f);f="";grid.push(raw);raw=[];continue}
+f+=ch}
+if(f!==""||raw.length){raw.push(f);grid.push(raw)}
+grid=grid.filter(function(r){return r.join("").trim()!==""});
+if(!grid.length)throw new Error("文件为空");
+var head=grid[0].map(function(h){return h.trim()});
+var missing=COLS.filter(function(c){return head.indexOf(c)<0});
+if(missing.length)throw new Error("缺少必需列："+missing.join(", "));
+var out=[],bad=0;
+for(i=1;i<grid.length;i++){
+var r=grid[i],o={};
+COLS.forEach(function(c){o[c]=(r[head.indexOf(c)]||"").toString().trim()});
+var nums=["spend","impressions","clicks","conversions","revenue"],ok=true;
+if(!o.date||!o.market||!o.channel)ok=false;
+nums.forEach(function(n){var v=Number(o[n]);if(o[n]===""||!isFinite(v)||v<0)ok=false;else o[n]=v});
+if(ok&&o.spend>=0)out.push(o);else bad++;
+}
+return {rows:out,bad:bad,total:grid.length-1};
+}
+
+/* ---- 真实聚合计算 ---- */
+function sum(rows){var o={spend:0,impressions:0,clicks:0,conversions:0,revenue:0};
+rows.forEach(function(r){for(var k in o)o[k]+=r[k]});
+o.ctr=ratio(o.clicks,o.impressions);o.cvr=ratio(o.conversions,o.clicks);
+o.cpc=ratio(o.spend,o.clicks);o.cpa=ratio(o.spend,o.conversions);o.roas=ratio(o.revenue,o.spend);
+return o}
+function groupBy(rows,fn){var m={};rows.forEach(function(r){var k=fn(r);if(!m[k])m[k]=[];m[k].push(r)});
+var out=[];for(var k in m){var o=sum(m[k]);o.name=k;out.push(o)}return out}
+function periods(rows){
+var uniq=[];rows.map(function(r){return r.date}).sort().forEach(function(d){if(uniq.indexOf(d)<0)uniq.push(d)});
+var cut=uniq[Math.floor(uniq.length/2)];
+return {prev:sum(rows.filter(function(r){return r.date<cut})),
+next:sum(rows.filter(function(r){return r.date>=cut})),days:uniq.length,
+split:uniq.length>=14?"后 7 天 vs 前 7 天":"后半段 vs 前半段（共 "+uniq.length+" 天）"}}
+function delta(cur,prev,inv){
+if(cur===null||prev===null||!prev)return '<span style="color:var(--ink3)">环比 —</span>';
+var v=(cur-prev)/prev*100,up=v>=0,good=inv?!up:up;
+return '<span style="color:'+(good?"var(--ok)":"var(--bad)")+'">'+(up?"▲ ":"▼ ")+Math.abs(v).toFixed(1)+'%</span>'}
+function renderKPI(){
+var a=AGG,p=a._p;
+var items=[{k:"总花费",v:money(a.spend),d:delta(p.next.spend,p.prev.spend)},
+{k:"总收入",v:money(a.revenue),d:delta(p.next.revenue,p.prev.revenue)},
+{k:"整体 ROAS",v:fmt(a.roas,2),d:delta(p.next.roas,p.prev.roas)},
+{k:"总转化数",v:money(a.conversions),d:delta(p.next.conversions,p.prev.conversions)},
+{k:"平均 CPA",v:fmt(a.cpa,2),d:delta(p.next.cpa,p.prev.cpa,true)}];
+var h="";items.forEach(function(it){h+='<div class="kpi"><div class="k">'+it.k+'</div><div class="v">'+it.v+'</div><div class="d">'+it.d+'</div></div>'});
+$("kpis").innerHTML=h;
+}
+/* ---- 图表：SVG 实时绘制 ---- */
+function dayAgg(){return groupBy(RAW,function(r){return r.date}).sort(function(a,b){return a.name<b.name?-1:1})}
+function lineChart(el,data,get){
+var W=520,H=170,pl=34,pr=10,pt=12,pb=26;
+var vals=data.map(get).map(function(v){return v===null?0:v});
+var mx=Math.max.apply(null,vals),mn=Math.min.apply(null,vals);
+if(mx===mn){mx=mn+1}
+var iw=W-pl-pr,ih=H-pt-pb;
+function X(i){return pl+(data.length===1?iw/2:i*iw/(data.length-1))}
+function Y(v){return pt+ih-(v-mn)/(mx-mn)*ih}
+var s='<svg class="chart" viewBox="0 0 '+W+' '+H+'">';
+for(var g=0;g<=3;g++){var yv=mn+(mx-mn)*g/3,y=Y(yv);
+s+='<line x1="'+pl+'" y1="'+y+'" x2="'+(W-pr)+'" y2="'+y+'" stroke="#EDF1F8"/>';
+s+='<text class="ax" x="2" y="'+(y+3)+'">'+yv.toFixed(2)+'</text>'}
+var path="";
+data.forEach(function(d,i){path+=(i?"L":"M")+X(i).toFixed(1)+" "+Y(vals[i]).toFixed(1)+" "});
+s+='<path d="'+path+'" fill="none" stroke="#2B5CE6" stroke-width="2"/>';
+data.forEach(function(d,i){
+s+='<circle cx="'+X(i)+'" cy="'+Y(vals[i])+'" r="2.6" fill="#2B5CE6"><title>'+d.name+'：'+fmt(vals[i],2)+'</title></circle>';
+if(i%2===0||i===data.length-1)s+='<text class="ax" x="'+X(i)+'" y="'+(H-8)+'" text-anchor="middle">'+d.name.slice(5)+'</text>'});
+$(""+el).innerHTML=s+"</svg>";
+}
+function barChart(el,data,get){
+var W=520,H=170,pl=40,pr=10,pt=12,pb=26;
+var vals=data.map(get),mx=Math.max.apply(null,vals)||1;
+var iw=W-pl-pr,ih=H-pt-pb,bw=Math.min(22,iw/data.length*0.62);
+var s='<svg class="chart" viewBox="0 0 '+W+' '+H+'">';
+for(var g=0;g<=3;g++){var yv=mx*g/3,y=pt+ih-ih*g/3;
+s+='<line x1="'+pl+'" y1="'+y+'" x2="'+(W-pr)+'" y2="'+y+'" stroke="#EDF1F8"/>';
+s+='<text class="ax" x="2" y="'+(y+3)+'">'+Math.round(yv/1000)+'k</text>'}
+data.forEach(function(d,i){
+var x=pl+iw*(i+0.5)/data.length-bw/2,h=vals[i]/mx*ih;
+s+='<rect x="'+x.toFixed(1)+'" y="'+(pt+ih-h).toFixed(1)+'" width="'+bw+'" height="'+h.toFixed(1)+'" rx="3" fill="#7448D8" opacity=".85"><title>'+d.name+'：'+money(vals[i])+'</title></rect>';
+if(i%2===0||i===data.length-1)s+='<text class="ax" x="'+(x+bw/2)+'" y="'+(H-8)+'" text-anchor="middle">'+d.name.slice(5)+'</text>'});
+$(el).innerHTML=s+"</svg>";
+}
+function hbar(el,items,unit,lowFn,suf){
+var mx=Math.max.apply(null,items.map(function(i){return i.v}))||1,h="";
+items.forEach(function(it){
+h+='<div class="brow"><span class="lb">'+it.n+'</span><div class="btr"><div class="bfl'+(lowFn&&lowFn(it)?" low":"")+'" style="width:'+(it.v/mx*100).toFixed(1)+'%"></div></div><span class="vl">'+it.v.toFixed(unit)+(suf||"")+'</span></div>'});
+$(el).innerHTML=h;
+}
+function renderCharts(){
+var d=dayAgg();
+lineChart("chRoas",d,function(x){return x.roas});
+barChart("chSpend",d,function(x){return x.spend});
+$("roasAll").textContent=fmt(AGG.roas,2);
+var mk=groupBy(RAW,function(r){return r.market}).sort(function(a,b){return b.roas-a.roas});
+hbar("barMarket",mk.map(function(o){return {n:o.name,v:o.roas}}),2,function(it){return it.v<1.5});
+var ch=groupBy(RAW,function(r){return r.channel}).sort(function(a,b){return b.spend-a.spend});
+hbar("barChannel",ch.map(function(o){return {n:o.name,v:o.spend/AGG.spend*100}}),1,null,"%");
+}
+/* ---- 多维下钻表 ---- */
+function keyOf(r){return DIM==="market"?r.market:DIM==="channel"?r.channel:r.market+" × "+r.channel}
+function renderTable(){
+var rows=groupBy(RAW,keyOf),k=SORT.k;
+rows.sort(function(a,b){
+var av=a[k]===null?-1:a[k],bv=b[k]===null?-1:b[k];
+if(typeof av==="string")return SORT.asc?a.name.localeCompare(b.name):b.name.localeCompare(a.name);
+return SORT.asc?av-bv:bv-av});
+var p0={};DIAGS.forEach(function(d){if(d.p==="P0")p0[d.key]=true});
+var h='<tr><th data-k="name">对象</th><th data-k="spend">花费</th><th data-k="revenue">收入</th><th data-k="roas">ROAS</th><th data-k="conversions">转化</th><th data-k="cpa">CPA</th><th data-k="ctr">CTR</th><th data-k="cvr">CVR</th></tr>';
+rows.forEach(function(r){
+h+='<tr'+(p0[r.name]?' class="hl"':"")+'><td><b>'+r.name+'</b></td><td>'+money(r.spend)+'</td><td>'+money(r.revenue)+'</td><td><b>'+fmt(r.roas,2)+'</b></td><td>'+money(r.conversions)+'</td><td>'+fmt(r.cpa,2)+'</td><td>'+(r.ctr===null?"—":(r.ctr*100).toFixed(2)+"%")+'</td><td>'+(r.cvr===null?"—":(r.cvr*100).toFixed(2)+"%")+'</td></tr>'});
+$("tbl").innerHTML=h;
+var ths=$("tbl").querySelectorAll("th");
+for(var i=0;i<ths.length;i++){ths[i].onclick=function(){
+var kk=this.getAttribute("data-k");
+if(SORT.k===kk)SORT.asc=!SORT.asc;else{SORT.k=kk;SORT.asc=false}
+renderTable()}}
+}
+function renderAll(){
+AGG=sum(RAW);AGG._p=periods(RAW);
+renderKPI();renderCharts();
+DIAGS=diagnose();renderTable();renderDiags();
+$("rep").style.display="none";
+}
+
+/* ---- 规则诊断：阈值公开，结论全部由上方数据算出 ---- */
+function diagnose(){
+var out=[],all=AGG;
+function add(p,key,title,ev,advice){out.push({p:p,key:key,title:title,ev:ev,advice:advice})}
+function pc(x){return x===null?"—":(x*100).toFixed(2)+"%"}
+var mcs=groupBy(RAW,function(r){return r.market+" × "+r.channel});
+mcs.forEach(function(g){
+var share=g.spend/all.spend;
+if(g.roas!==null&&g.roas<1.5&&share>=0.10)
+add("P0",g.name,"高消耗低回报",
+"ROAS "+fmt(g.roas,2)+"（整体 "+fmt(all.roas,2)+"）；花费 "+money(g.spend)+"，占整体 "+(share*100).toFixed(1)+"%；对应收入 "+money(g.revenue)+"。",
+"先暂停或下调该组合预算，把花费转向 ROAS 高于整体的对象；复查该市场素材卖点与落地页价格承接，再用小预算复测，不建议直接加量。");
+if(g.cpa!==null&&all.cpa&&g.cpa>all.cpa*1.5&&g.conversions>=20)
+add("P1",g.name,"转化成本偏高",
+"CPA "+fmt(g.cpa,2)+"，为整体 "+fmt(all.cpa,2)+" 的 "+(g.cpa/all.cpa).toFixed(2)+" 倍；转化 "+money(g.conversions)+"，CPC "+fmt(g.cpc,2)+"。",
+"先拆 CPC 与 CVR 定位原因：CPC 接近均值而 CVR 偏低时，问题在转化链路而非流量价格，优先改落地页而不是压价。");
+if(g.ctr!==null&&all.ctr&&g.ctr<all.ctr*0.6&&g.impressions>=50000)
+add("P1",g.name,"点击效率偏低",
+"CTR "+pc(g.ctr)+"（整体 "+pc(all.ctr)+"），曝光 "+money(g.impressions)+"。",
+"曝光充足而 CTR 偏低，问题更可能在素材与定向而非预算。建议做素材 A/B 测试，并核对定向人群与该市场的匹配度。");
+if(g.cvr!==null&&all.cvr&&g.cvr<all.cvr*0.6&&g.clicks>=1000)
+add("P1",g.name,"转化链路偏弱",
+"CVR "+pc(g.cvr)+"（整体 "+pc(all.cvr)+"），点击 "+money(g.clicks)+"。",
+"点击充足但转化偏低，优先检查落地页加载速度、广告承诺与页面价格的一致性、支付与规格信息完整性，再考虑加投。");
+if(g.roas!==null&&all.roas&&g.roas>all.roas*1.3&&share>=0.05)
+add("P2",g.name,"表现优于均值，可作加预算候选",
+"ROAS "+fmt(g.roas,2)+"（整体 "+fmt(all.roas,2)+"），花费占比 "+(share*100).toFixed(1)+"%。",
+"建议按 10%-20% 阶梯加预算并观察边际 ROAS，避免一次性大幅加量导致回报回落。");
+});
+var names={};RAW.forEach(function(r){names[r.market]=1});
+for(var nm in names){
+var pp=periods(RAW.filter(function(r){return r.market===nm}));
+if(pp.prev.roas&&pp.next.roas&&pp.prev.roas>=2&&(pp.prev.roas-pp.next.roas)/pp.prev.roas>0.3)
+add("P0",nm,"市场回报骤降",
+nm+" 前期 ROAS "+fmt(pp.prev.roas,2)+" → 后期 "+fmt(pp.next.roas,2)+"，降幅 "+((pp.prev.roas-pp.next.roas)/pp.prev.roas*100).toFixed(1)+"%（口径："+pp.split+"）。",
+"该市场回报在短期内显著恶化。先核查后期是否有落地页故障、价格或促销变更、素材更换、预算突增等动作，并按渠道下钻确认降幅集中点；原因定位前暂停加预算。");
+}
+var order={P0:0,P1:1,P2:2};
+out.sort(function(a,b){return order[a.p]-order[b.p]});
+return out;
+}
+function renderDiags(){
+var n0=DIAGS.filter(function(d){return d.p==="P0"}).length;
+$("diagCnt").textContent=DIAGS.length?"命中 "+DIAGS.length+" 条 · 其中 P0 "+n0+" 条":"";
+if(!DIAGS.length){$("diags").innerHTML='<div class="card pad" style="font-size:12px;color:var(--ink2)">在当前阈值下未发现异常。这不是「没有问题」的结论，可调整阈值或扩大数据区间后复看。</div>';return}
+var h="";
+DIAGS.forEach(function(d){
+h+='<div class="diag '+d.p.toLowerCase()+'"><div class="dh"><span class="pill '+d.p.toLowerCase()+'">'+d.p+'</span><b>'+d.key+' · '+d.title+'</b></div><div class="ev">'+d.ev+'</div><p>'+d.advice+'</p></div>'});
+$("diags").innerHTML=h;
+}
+
+/* ---- 报告：由真实计算结果拼装，可导出 ---- */
+var REPORT="",AI_TEXT="";
+function tableMd(rows){
+var L=["| 对象 | 花费 | 收入 | ROAS | 转化 | CPA | CTR | CVR |","|---|---|---|---|---|---|---|---|"];
+rows.forEach(function(r){L.push("| "+r.name+" | "+money(r.spend)+" | "+money(r.revenue)+" | "+fmt(r.roas,2)+" | "+money(r.conversions)+" | "+fmt(r.cpa,2)+" | "+(r.ctr===null?"—":(r.ctr*100).toFixed(2)+"%")+" | "+(r.cvr===null?"—":(r.cvr*100).toFixed(2)+"%")+" |")});
+return L.join("\n");
+}
+function genReport(){
+var a=AGG,p=a._p;
+var dates=RAW.map(function(r){return r.date}).sort();
+var L=[];
+L.push("# 多市场投放复盘报告");
+L.push("数据区间："+dates[0]+" ~ "+dates[dates.length-1]+"（"+p.days+" 天）｜有效记录 "+RAW.length+" 行｜环比口径："+p.split);
+L.push("生成方式：规则引擎基于上传数据实时计算，诊断阈值公开可调；金额单位与源数据一致。\n");
+L.push("## 一、整体表现");
+L.push("- 总花费 "+money(a.spend)+"，总收入 "+money(a.revenue)+"，整体 ROAS "+fmt(a.roas,2));
+L.push("- 总转化 "+money(a.conversions)+"，平均 CPA "+fmt(a.cpa,2)+"，平均 CPC "+fmt(a.cpc,2));
+L.push("- CTR "+(a.ctr*100).toFixed(2)+"%｜CVR "+(a.cvr*100).toFixed(2)+"%");
+L.push("- 环比：ROAS "+fmt(p.prev.roas,2)+" → "+fmt(p.next.roas,2)+"；花费 "+money(p.prev.spend)+" → "+money(p.next.spend)+"；转化 "+money(p.prev.conversions)+" → "+money(p.next.conversions)+"\n");
+L.push("## 二、分市场表现\n"+tableMd(groupBy(RAW,function(r){return r.market}).sort(function(x,y){return y.spend-x.spend}))+"\n");
+L.push("## 三、分渠道表现\n"+tableMd(groupBy(RAW,function(r){return r.channel}).sort(function(x,y){return y.spend-x.spend}))+"\n");
+L.push("## 四、诊断结论与建议");
+if(!DIAGS.length)L.push("当前阈值下未发现异常，不代表业务无问题，建议调整阈值或补充数据维度。");
+DIAGS.forEach(function(d,i){L.push((i+1)+". **["+d.p+"] "+d.key+" · "+d.title+"**\n   - 证据："+d.ev+"\n   - 建议："+d.advice)});
+L.push("\n## 五、AI 归因与复盘表述");
+if(AI_TEXT){L.push(AI_TEXT);L.push("\n> 本段由 Coze 大模型工作流基于上方诊断生成，仅做解释与表达；所有数字以规则引擎计算结果为准。")}
+else{L.push("未生成。可在第 4 步复制诊断结论，到 Coze 工作流生成归因后贴回合并。")}
+L.push("\n## 六、下一步动作");
+var p0=DIAGS.filter(function(d){return d.p==="P0"}),p1=DIAGS.filter(function(d){return d.p==="P1"}),p2=DIAGS.filter(function(d){return d.p==="P2"});
+if(p0.length)L.push("1. 预算处置：优先处理 "+p0.map(function(d){return d.key}).join("、")+"，先控量再定位原因，避免低效消耗继续扩大。");
+if(p1.length)L.push("2. 专项排查：对 "+p1.map(function(d){return d.key}).join("、")+" 分别做素材 A/B 与落地页链路检查，明确问题在流量侧还是转化侧。");
+if(p2.length)L.push("3. 预算再分配：将释放出的预算按阶梯转向 "+p2.map(function(d){return d.key}).join("、")+"，并以边际 ROAS 作为加量停止条件。");
+L.push((DIAGS.length?4:1)+". 数据补全：补充素材 ID、落地页、人群包维度，否则素材级与人群级归因无法下钻，只能停留在市场与渠道层。");
+L.push("\n## 七、口径与限制");
+L.push("- 指标公式：CTR=clicks/impressions；CVR=conversions/clicks；CPA=spend/conversions；ROAS=revenue/spend。分母为 0 时记为「—」，不参与均值与排序。");
+L.push("- 本报告不含归因模型校准，收入口径以源数据为准；若源数据为末次点击归因，跨渠道加总可能重复计入转化。");
+L.push("- 语义化归因（如具体素材文案问题）需接入大模型与素材数据，本版不做超出数据的支持性结论。");
+REPORT=L.join("\n");
+$("rep").textContent=REPORT;$("rep").style.display="block";
+$("rep").scrollIntoView({behavior:"smooth",block:"nearest"});
+toast("报告已生成，共 "+DIAGS.length+" 条诊断");
+}
+
+/* ---- 事件与数据载入 ---- */
+function afterLoad(bad){
+if(!RAW.length){var m0=$("msg");m0.className="msg err";m0.innerHTML="没有可用数据行，请检查文件内容。";return}
+$("empty").style.display="none";$("main").style.display="block";
+renderAll();
+var mk={},ch={};RAW.forEach(function(r){mk[r.market]=1;ch[r.channel]=1});
+var m=$("msg");m.className="msg "+(bad?"wr":"ok");
+m.innerHTML="已载入 <b>"+RAW.length+"</b> 行有效数据："+Object.keys(mk).length+" 个市场 × "+Object.keys(ch).length+" 个渠道 × "+AGG._p.days+" 天。"+(bad?"<br>已跳过 "+bad+" 行无效记录（缺字段或数值非法），未纳入任何计算。":"");
+}
+$("loadDemo").onclick=function(){RAW=buildDemo();afterLoad(0);toast("示例数据已载入")};
+$("dlDemo").onclick=function(e){
+e.preventDefault();
+var blob=new Blob([toCSV(buildDemo())],{type:"text/csv;charset=utf-8"});
+var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="bluepilot_sample.csv";a.click();
+toast("示例 CSV 已下载，可再次上传体验校验流程");
+};
+$("upzone").onclick=function(){$("file").click()};
+$("upzone").ondragover=function(e){e.preventDefault()};
+$("upzone").ondrop=function(e){e.preventDefault();if(e.dataTransfer.files.length)readFile(e.dataTransfer.files[0])};
+$("file").onchange=function(){if(this.files.length)readFile(this.files[0])};
+function readFile(f){
+var m=$("msg");
+if(!/\.csv$/i.test(f.name)){m.className="msg err";m.innerHTML="目前仅支持 CSV。Excel 请先「另存为 CSV UTF-8」后再上传。";return}
+var rd=new FileReader();
+rd.onload=function(){
+try{var r=parseCSV(rd.result);RAW=r.rows;afterLoad(r.bad);toast("上传解析完成")}
+catch(e){m.className="msg err";m.innerHTML="解析失败："+e.message+"<br>请确认表头包含必需列，且第一行为列名。"}
+};
+rd.onerror=function(){m.className="msg err";m.innerHTML="文件读取失败，请重试。"};
+rd.readAsText(f,"UTF-8");
+}
+var segs=$("seg").querySelectorAll("button");
+for(var i=0;i<segs.length;i++){segs[i].onclick=function(){
+for(var j=0;j<segs.length;j++)segs[j].className="";
+this.className="on";DIM=this.getAttribute("data-d");renderTable();
+}}
+$("gen").onclick=genReport;
+$("cp").onclick=function(){
+if(!REPORT)genReport();
+function fb(){var ta=document.createElement("textarea");ta.value=REPORT;document.body.appendChild(ta);ta.select();
+try{document.execCommand("copy");toast("已复制")}catch(e){toast("复制失败，请手动选择")}document.body.removeChild(ta)}
+if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(REPORT).then(function(){toast("报告已复制")},fb);else fb();
+};
+$("dl").onclick=function(){
+if(!REPORT)genReport();
+var blob=new Blob(["﻿"+REPORT],{type:"text/markdown;charset=utf-8"});
+var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="bluepilot_review.md";a.click();
+};
+
+/* ---- 与 Coze 的人工桥接 ---- */
+function copyText(txt,msg){
+function fb(){var ta=document.createElement("textarea");ta.value=txt;document.body.appendChild(ta);ta.select();
+try{document.execCommand("copy");toast(msg)}catch(e){toast("复制失败，请手动选择")}document.body.removeChild(ta)}
+if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){toast(msg)},fb);else fb();
+}
+function diagPayload(){
+if(!RAW.length)return "";
+var a=AGG,p=a._p,dates=RAW.map(function(r){return r.date}).sort(),L=[];
+L.push("【任务】请对以下投放诊断结果做语义归因与复盘表述。只允许使用下文已出现的数字，不得新增任何数据；每条解释必须引用对应证据；无法判断处明确写「需补充数据验证」，不要猜测。");
+L.push("\n【数据区间】"+dates[0]+" ~ "+dates[dates.length-1]+"，共 "+p.days+" 天，有效记录 "+RAW.length+" 行");
+L.push("【整体指标】总花费 "+money(a.spend)+"；总收入 "+money(a.revenue)+"；整体 ROAS "+fmt(a.roas,2)+"；总转化 "+money(a.conversions)+"；CPA "+fmt(a.cpa,2)+"；CPC "+fmt(a.cpc,2)+"；CTR "+(a.ctr*100).toFixed(2)+"%；CVR "+(a.cvr*100).toFixed(2)+"%");
+L.push("【环比】口径 "+p.split+"：ROAS "+fmt(p.prev.roas,2)+" → "+fmt(p.next.roas,2)+"；花费 "+money(p.prev.spend)+" → "+money(p.next.spend)+"；转化 "+money(p.prev.conversions)+" → "+money(p.next.conversions));
+L.push("\n【诊断条目】");
+DIAGS.forEach(function(d,i){L.push((i+1)+". ["+d.p+"] "+d.key+" · "+d.title+"\n证据："+d.ev+"\n规则建议："+d.advice)});
+L.push("\n【输出要求】严格分三部分：一、整体判断（100 字以内）；二、逐条归因（每条包含：可能原因不超过 2 个、复盘会上的一句话表述、需要补充验证的数据维度）；三、复盘会结论摘要（3 条，每条一句话，可直接在会上宣读）。");
+return L.join("\n");
+}
+$("cpDiag").onclick=function(){
+if(!RAW.length){toast("请先载入数据");return}
+copyText(diagPayload(),"诊断结论已复制，去 Coze 粘贴发送");
+};
+$("mergeAi").onclick=function(){
+var v=$("aiIn").value.trim();
+if(!v){toast("请先粘贴 Coze 返回的归因文本");return}
+AI_TEXT=v;genReport();toast("AI 归因已合并进报告");
+};
+</script>
+</body>
+</html>
